@@ -1,0 +1,2 @@
+# jsonParalelProcessingDemo
+Adatbázisok Elméleti alapjai
