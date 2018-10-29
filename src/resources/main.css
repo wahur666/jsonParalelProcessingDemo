@@ -1,0 +1,33 @@
+.content {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    width: 80%;
+    margin: 0 auto;
+    background: rgb(230, 229, 229);
+}
+
+.row {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+textarea {
+    width: 90%;
+}
+
+.area_div {
+    text-align: center;
+}
+
+.form {
+    text-align: left;
+    margin: 0 40px;
+    width: 100%;
+}
+
+.choiceboxes {
+}
+
+h1 {
+    text-align: center;
+}
