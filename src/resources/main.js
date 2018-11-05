@@ -26,7 +26,7 @@ function rewrite_method_0(input_string) {
 			}
 		}		
 	}
-    return arrayToString(string_array);
+    return string_array.filter(str => str != "").join("\n");
 }
 
 function rewrite_method_1(input_string) {
@@ -79,14 +79,4 @@ function getCheckboxIndex(){
         }
     }
 	return CH_index;
-}
-
-function arrayToString(array){
-	var output = "";
-	for(var i=0; i<array.length; i++){
-		if(array[i] != ""){
-			output += array[i] + "\n";
-		}
-	}
-	return output;
 }
