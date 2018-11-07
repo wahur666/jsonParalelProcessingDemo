@@ -1,6 +1,7 @@
 var options = document.getElementsByName("contact");
+var clicks = 0;
 
-//todo: $n-ek nem teljesen jók még
+//todo: $n-ek nem teljesen jók még !! (mindhárom szabályban átírom majd, ha lesz kedvem. Lényeg megvan.)
 
 function rewrite_method_0(input_string) {
 	var string_array = input_string.split("\n");
@@ -57,7 +58,48 @@ function rewrite_method_1(input_string) {
 }
 
 function rewrite_method_2(input_string) {
-    return "Atirva az harmadik szerint: " + input_string;
+	clicks += 1;
+	
+	if(clicks == 1){
+		var string_array = input_string.split("\n");
+		var array_size = string_array.length;
+		
+		for(var i=(array_size-2); i>0; i--){
+			//két egymás utáni assign -> subplan
+			if(string_array[i].split("(")[0]=="ASSIGN" &&  string_array[i-1].split("(")[0] == "ASSIGN"){
+				if(string_array[i-1].includes("count")){
+					string_array[i-1] = "SUBPLAN{\n\t" + string_array[i-1].replace("ASSIGN", "AGGREGATE");
+					string_array[i] = "\t" + string_array[i].replace("ASSIGN", "UNNEST").replace("treat(item,", "iterate(") + "\n}";
+				}
+			}
+		}
+		
+		return string_array.filter(str => str != "").join("\n");
+		
+	}else if(clicks == 2){
+		var tempAggregate = "";
+		var subplan_index = 0;
+		var string_array = (document.getElementById("output").value).split("\n");
+		var array_size = string_array.length;
+		
+		for(var i=0; i<array_size; i++){
+			if(string_array[i].includes("AGGREGATE")){
+				subplan_index = i-1;
+				if(string_array[i].includes("create_sequence")){
+					var temp = string_array[i].split(":")[1];
+					string_array[i] = string_array[i].replace(temp, tempAggregate);
+				}
+				else{
+					tempAggregate = string_array[i].split(":")[1];
+					for(var j=0; j<=3; j++){
+						string_array[subplan_index+j] = "";
+					}
+				}
+			}
+		}
+		return string_array.filter(str => str != "").join("\n");
+	}
+	
 }
 
 
@@ -92,7 +134,7 @@ function demo(){
 		input_area.value = "DISTRIBUTE-RESULT($$13)\nUNNEST($$13:keys-or-members($$6))\nASSIGN($$6:value(value($$4, \"bookstore\"), \"book\"))\nUNNEST($$4:iterate($$2))\nASSIGN(collection(\"/books\"), $$2)\nEMPTY-TUPLE-SOURCE";
 		query_area.value = "collection(\"/books\")(\"bookstore\")(\"book\")()";
 	}else{
-		input_area.value = "DISTRIBUTE-RESULT($$20)\nUNNEST($$20:iterate($$19))\nASSIGN($$19:count(value($$18, \"title\")))\nASSIGN($$18:treat(item,$$16))\nGROUP-BY($$17:0-<$$14){\n\tAGGREGATE($$16:create_sequence($$13))\n}\nASSIGN($$14:data(value($$13,\"author\")))\nDATASCAN(collection(\"/books\"), $$13, (\"bookstore\")(\"book\")())\nEMPTY-TUPLE-SOURCE";
+		input_area.value = "DISTRIBUTE-RESULT($$20)\nUNNEST($$20:iterate($$19))\nASSIGN($$19:count(value($$18, \"title\")))\nASSIGN($$18:treat(item,$$16))\nGROUP-BY($$17:0->$$14){\n\tAGGREGATE($$16:create_sequence($$13))\n}\nASSIGN($$14:data(value($$13,\"author\")))\nDATASCAN(collection(\"/books\"), $$13, (\"bookstore\")(\"book\")())\nEMPTY-TUPLE-SOURCE";
 		query_area.value = "for $x in collection(\"/books\")(\"bookstore\")(\"books\")()\ngroup by $author:=$x(\"author\")\nreturn count(for $j in $x return $j(\"title\"))";
 	}
 }
