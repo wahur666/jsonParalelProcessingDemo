@@ -1,6 +1,6 @@
 var options = document.getElementsByName("contact");
 var clicks = 0;
-
+var groupby_result = "";
 //todo: $n-ek nem teljesen jók még !! (mindhárom szabályban átírom majd, ha lesz kedvem. Lényeg megvan.)
 
 function rewrite_method_0(input_string) {
@@ -73,8 +73,8 @@ function rewrite_method_2(input_string) {
 				}
 			}
 		}
-		
-		return string_array.filter(str => str != "").join("\n");
+		groupby_result = string_array.filter(str => str != "").join("\n");
+		return groupby_result;
 		
 	}else if(clicks == 2){
 		var tempAggregate = "";
@@ -97,8 +97,10 @@ function rewrite_method_2(input_string) {
 				}
 			}
 		}
-		return string_array.filter(str => str != "").join("\n");
+		groupby_result = string_array.filter(str => str != "").join("\n")
+		return groupby_result;
 	}
+	return groupby_result;
 	
 }
 
@@ -147,6 +149,7 @@ function reset(){
 	input_area.value = "";
 	output_area.value = "";
 	query_area.value = "";
+	clicks = 0;
 }
 
 function getCheckboxIndex(){
