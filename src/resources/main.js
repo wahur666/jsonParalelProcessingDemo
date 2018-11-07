@@ -9,7 +9,7 @@ function rewrite_method_0(input_string) {
 	
 	var kom="";
 	for(var i = (array_size-2); i>=0; i--){
-		if(string_array[i].split("(")[0] == "ASSIGN"){
+		if(string_array[i].includes("ASSIGN")){
 			
 			if(string_array[i].includes("promote(data")){
 				string_array[i] = string_array[i].replace(".json", ".xml");
@@ -19,7 +19,7 @@ function rewrite_method_0(input_string) {
 				kom = string_array[i].split("keys-or-members(")[1].split(")")[0];
 				string_array[i] = "";
 			}
-		}else if(string_array[i].split("(")[0] == "UNNEST"){
+		}else if(string_array[i].includes("UNNEST")){
 			if(string_array[i].includes("iterate")){
 				var pattern = /[$0-9]+/g;
 				string_array[i] = string_array[i].replace("iterate", "keys-or-members");
@@ -34,7 +34,7 @@ function rewrite_method_1(input_string) {
 	var array_size = string_array.length;
 	var datascan_index = 0;
 	for(var i = (array_size-2); i>=0; i--){
-		if(string_array[i].split("(")[0] == "ASSIGN"){
+		if(string_array[i].includes("ASSIGN")){
 			//ASSIGN Datascan-be
 			if(string_array[i].includes("collection")){
 				string_array[i] = string_array[i].replace("ASSIGN", "DATASCAN")
@@ -50,7 +50,7 @@ function rewrite_method_1(input_string) {
 				string_array[datascan_index] = string_array[datascan_index].replace(toReplace, (temp.join("\"")));				
 				string_array[i] = "";
 			}
-		}else if(string_array[i].split("(")[0] == "UNNEST"){
+		}else if(string_array[i].includes("UNNEST")){
 			string_array[i] = "";
 		}
 	}
@@ -66,7 +66,7 @@ function rewrite_method_2(input_string) {
 		
 		for(var i=(array_size-2); i>0; i--){
 			//két egymás utáni assign -> subplan
-			if(string_array[i].split("(")[0]=="ASSIGN" &&  string_array[i-1].split("(")[0] == "ASSIGN"){
+			if(string_array[i].includes("ASSIGN") &&  string_array[i-1].includes("ASSIGN")){
 				if(string_array[i-1].includes("count")){
 					string_array[i-1] = "SUBPLAN{\n\t" + string_array[i-1].replace("ASSIGN", "AGGREGATE");
 					string_array[i] = "\t" + string_array[i].replace("ASSIGN", "UNNEST").replace("treat(item,", "iterate(") + "\n}";
