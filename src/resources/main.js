@@ -1,9 +1,8 @@
 var options = document.getElementsByName("contact");
 var clicks = 0;
 var groupby_result = "";
-//todo: $n-ek nem teljesen jók még !! (mindhárom szabályban átírom majd, ha lesz kedvem. Lényeg megvan.)
 
-function rewrite_method_0(input_string) {
+function pathExpression(input_string) {
 	var string_array = input_string.split("\n");
 	var array_size = string_array.length;
 	
@@ -16,24 +15,27 @@ function rewrite_method_0(input_string) {
 				string_array[i] = string_array[i].replace("(promote(data", "").replace(", string))", "").replace("))", ")");
 			}
 			else if(string_array[i].includes("keys-or-members")){
-				kom = string_array[i].split("keys-or-members(")[1].split(")")[0];
+				kom = getSecondIndex(string_array[i])
 				string_array[i] = "";
 			}
 		}else if(string_array[i].includes("UNNEST")){
 			if(string_array[i].includes("iterate")){
-				var pattern = /[$0-9]+/g;
+				var temp = getSecondIndex(string_array[i])
 				string_array[i] = string_array[i].replace("iterate", "keys-or-members");
+				string_array[i] = changeIndex(string_array[i], temp, kom);
 			}
 		}		
 	}
     return string_array.filter(str => str != "").join("\n");
 }
 
-function rewrite_method_1(input_string) {
+function pipelining(input_string) {
 	var string_array = input_string.split("\n");
 	var array_size = string_array.length;
 	var datascan_index = 0;
-	for(var i = (array_size-2); i>=0; i--){
+	var indexBuffer = "";
+	
+	for(var i = (array_size-2); i>0; i--){
 		if(string_array[i].includes("ASSIGN")){
 			//ASSIGN Datascan-be
 			if(string_array[i].includes("collection")){
@@ -47,17 +49,26 @@ function rewrite_method_1(input_string) {
 				temp[temp.length-1] = ")())"; 
 				
 				var toReplace = string_array[datascan_index].split(",")[1] 
-				string_array[datascan_index] = string_array[datascan_index].replace(toReplace, (temp.join("\"")));				
+				string_array[datascan_index] = string_array[datascan_index].replace(toReplace, " "+(temp.join("\"")));	
+				string_array[datascan_index] = string_array[datascan_index].replace(/\$/g, '$$$$');
+				
+				indexBuffer = getIndex(string_array[datascan_index]);
 				string_array[i] = "";
 			}
 		}else if(string_array[i].includes("UNNEST")){
 			string_array[i] = "";
 		}
 	}
+	
+	if(indexBuffer != ""){ //DISTRIBUTE-RESULT
+		var indexToChange = getIndex(string_array[0]);
+		string_array[0] = changeIndex(string_array[0], indexToChange, indexBuffer);
+	}
+	
 	return string_array.filter(str => str != "").join("\n");
 }
 
-function rewrite_method_2(input_string) {
+function groupBy(input_string) {
 	clicks += 1;
 	
 	if(clicks == 1){
@@ -81,12 +92,17 @@ function rewrite_method_2(input_string) {
 		var subplan_index = 0;
 		var string_array = (document.getElementById("output").value).split("\n");
 		var array_size = string_array.length;
+		var unnestSecondIndex = ""; 
+		var unnest_index = "";
+		var aggregateFirstIndex = ""; 
 		
 		for(var i=0; i<array_size; i++){
 			if(string_array[i].includes("AGGREGATE")){
 				subplan_index = i-1;
 				if(string_array[i].includes("create_sequence")){
 					var temp = string_array[i].split(":")[1];
+					 aggregateFirstIndex = getFirstIndex(string_array[i]);
+					
 					string_array[i] = string_array[i].replace(temp, tempAggregate);
 				}
 				else{
@@ -95,6 +111,22 @@ function rewrite_method_2(input_string) {
 						string_array[subplan_index+j] = "";
 					}
 				}
+				
+				if(aggregateFirstIndex != ""){
+					string_array[unnest_index] = changeIndex(string_array[unnest_index], unnestSecondIndex, aggregateFirstIndex)
+				}
+				
+			}else if(string_array[i].includes("ASSIGN")){
+				//note: aggregate index = subplan_index + 1 !
+				
+				var assignIndex = getSecondIndex(string_array[i]);
+				var toExamine = string_array[subplan_index+1];
+				var aggregateIndex = getSecondIndex(string_array[subplan_index+1].replace(/\$/g, '$$$$'));
+				string_array[subplan_index+1] = changeIndex(string_array[subplan_index+1], aggregateIndex, assignIndex);
+				
+			}else if(string_array[i].includes("UNNEST")){
+				unnestSecondIndex = getSecondIndex(string_array[i]);
+				unnest_index = i;
 			}
 		}
 		groupby_result = string_array.filter(str => str != "").join("\n")
@@ -113,15 +145,14 @@ function rewrite() {
     var output_string = "";
 
     if(active_checkbox_index == 0) {
-        output_string += rewrite_method_0(input_area.value);
+        output_string += pathExpression(input_area.value);
     } else if (active_checkbox_index == 1) { 
-        output_string += rewrite_method_1(input_area.value);
+        output_string += pipelining(input_area.value);
     } else {
-        output_string += rewrite_method_2(input_area.value);
+        output_string += groupBy(input_area.value);
     }
 
     output_area.value = output_string;
-
 }
 
 function demo(){
@@ -162,4 +193,39 @@ function getCheckboxIndex(){
         }
     }
 	return CH_index;
+}
+
+function getFirstIndex(str){
+	return str.split(":")[0].split("$")[2];
+}
+
+function getSecondIndex(str){
+	var secondindex = "";
+	var secondPart = str.split(":")[1].split("$")[2];
+	
+	if(secondPart.includes(",")){
+		secondindex = secondPart.split(",")[0];
+	}else if(secondPart.includes(")")){
+		secondindex = secondPart.split(")")[0];
+	}
+	
+	return secondindex;
+}
+
+function getIndex(str){
+	var strindex = "";
+	var tempStr = str.split("$")[2];
+	 
+	if(tempStr.includes(",")){
+		strindex = tempStr.split(",")[0];
+	}else if(tempStr.includes(")")){
+		strindex = tempStr.split(")")[0];
+	}
+	
+	return strindex;
+}
+
+function changeIndex(str, from, to){
+	str = str.replace(from, to);
+	return str;
 }
